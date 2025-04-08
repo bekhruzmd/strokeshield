@@ -2,6 +2,9 @@
 
 Stroke Shield is an advanced AI-powered stroke detection platform that combines cutting-edge technologies to provide real-time health monitoring and early warning signs of stroke. By analyzing facial asymmetry, posture anomalies, and speech patterns, the system offers comprehensive stroke risk assessment.
 
+![photo_2025-04-06 11 43 35](https://github.com/user-attachments/assets/d4200934-c275-4ed8-b311-596c8a9e3406)
+
+
 ## Key Features
 
 - **Real-time Facial Asymmetry Detection**: Uses MediaPipe Face Mesh to detect subtle changes in facial symmetry that may indicate stroke.
