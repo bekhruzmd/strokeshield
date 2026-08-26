@@ -1,27 +1,26 @@
-# StrokeShield — F.A.S.T. Stroke Assessment Platform
+# StrokeShield: AI-powered stroke detection when seconds matter
 **By Abubakr and Bekhruz**
 
-StrokeShield is a real-time stroke screening platform that uses computer vision and speech analysis to evaluate the three primary clinical indicators of stroke: facial drooping, arm weakness, and speech difficulty — the F.A.S.T. protocol used by first responders worldwide.
+StrokeShield is an advanced AI-powered stroke detection platform that combines cutting-edge computer vision and speech analysis to provide real-time health monitoring and early warning signs of stroke. By analyzing facial asymmetry, arm drift, and speech patterns through the clinical F.A.S.T. protocol, the system offers comprehensive stroke risk assessment.
 
 ![photo_2025-04-06 11 43 35](https://github.com/user-attachments/assets/d4200934-c275-4ed8-b311-596c8a9e3406)
 
-## How It Works
+## Key Features
 
-The platform walks the user through each step of the F.A.S.T. assessment:
+- **Real-time Facial Asymmetry Detection**: Uses MediaPipe Face Mesh (468 landmarks) to detect subtle changes in facial symmetry that may indicate stroke — normalized to the face's own orientation so head tilt doesn't produce false positives.
+- **Guided Arm Drift Test**: A 10-second bilateral elevation hold test using AI pose estimation to detect unilateral arm weakness in real time.
+- **Speech Pattern Analysis**: Records the user reading a standardized diagnostic passage and analyzes articulation, slurring, and word-finding difficulty.
+- **Emergency Protocol (T — Time)**: Surfaces a copyable first-responder diagnostic snapshot and a direct 911 call shortcut when high-risk indicators are detected.
+- **Comprehensive Dashboard**: Real-time metrics, historical assessments, and risk scoring in a clean, clinical interface.
 
-- **F — Face**: Live 468-point face mesh tracks mouth corner droop and eye asymmetry, normalized to the face's own orientation so head tilt doesn't produce false positives.
-- **A — Arm**: A guided 10-second elevation hold test measures bilateral wrist drift using pose landmarks.
-- **S — Speech**: The user reads a standardized diagnostic passage aloud; the system checks articulation and word-finding against the reference text.
-- **T — Time**: If indicators are flagged, an emergency panel surfaces a copyable first-responder snapshot and a direct 911 call shortcut.
-
-## Tech Stack
+## Technology Stack
 
 - **Frontend**: React, Tailwind CSS
-- **Vision**: MediaPipe FaceMesh + Pose (runs fully in-browser, no server round-trips)
-- **Speech**: Web Speech API + server-side text comparison fallback
-- **Backend**: Node.js / Express
+- **AI / Computer Vision**: MediaPipe FaceMesh + Pose — runs fully in-browser, no server round-trips
+- **Speech Recognition**: Web Speech API for real-time transcription + server-side analysis fallback
+- **Backend**: Node.js, Express
 - **Deployment**: Vercel
 
 ## Disclaimer
 
-This tool is for educational and screening purposes only and is not a substitute for medical diagnosis. If you suspect a stroke, call emergency services immediately. Always follow the F.A.S.T. method: **F**acial drooping, **A**rm weakness, **S**peech difficulty, **T**ime to call emergency services.
+This tool is for educational and screening purposes only and should not be used for medical diagnosis. If you suspect a stroke, call emergency services immediately (911 in the US). Remember the FAST method: **F**acial drooping, **A**rm weakness, **S**peech difficulties, **T**ime to call emergency services.
