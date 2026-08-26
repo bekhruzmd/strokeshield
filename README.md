@@ -1,24 +1,27 @@
-# Stroke Shield: AI-powered detection when seconds matter By Abubakr and Bekhruz
+# StrokeShield — F.A.S.T. Stroke Assessment Platform
+**By Abubakr and Bekhruz**
 
-Stroke Shield is an advanced AI-powered stroke detection platform that combines cutting-edge technologies to provide real-time health monitoring and early warning signs of stroke. By analyzing facial asymmetry, posture anomalies, and speech patterns, the system offers comprehensive stroke risk assessment.
+StrokeShield is a real-time stroke screening platform that uses computer vision and speech analysis to evaluate the three primary clinical indicators of stroke: facial drooping, arm weakness, and speech difficulty — the F.A.S.T. protocol used by first responders worldwide.
 
 ![photo_2025-04-06 11 43 35](https://github.com/user-attachments/assets/d4200934-c275-4ed8-b311-596c8a9e3406)
 
+## How It Works
 
-## Key Features
+The platform walks the user through each step of the F.A.S.T. assessment:
 
-- **Real-time Facial Asymmetry Detection**: Uses MediaPipe Face Mesh to detect subtle changes in facial symmetry that may indicate stroke.
-- **Posture Analysis**: Monitors shoulder imbalance, head tilt, and body lean to identify potential stroke symptoms.
-- **Speech Pattern Recognition**: Analyzes speech for coherence, slurring, and word-finding difficulties using Web Speech API and Google AI.
-- **Comprehensive Dashboard**: Provides real-time metrics, historical data, and risk assessments in an easy-to-understand interface.
+- **F — Face**: Live 468-point face mesh tracks mouth corner droop and eye asymmetry, normalized to the face's own orientation so head tilt doesn't produce false positives.
+- **A — Arm**: A guided 10-second elevation hold test measures bilateral wrist drift using pose landmarks.
+- **S — Speech**: The user reads a standardized diagnostic passage aloud; the system checks articulation and word-finding against the reference text.
+- **T — Time**: If indicators are flagged, an emergency panel surfaces a copyable first-responder snapshot and a direct 911 call shortcut.
 
-## Technology Stack
+## Tech Stack
 
-- **Frontend**: HTML, CSS, JavaScript with Tailwind CSS
-- **Backend**: Node.js, Express
-- **AI/ML**: MediaPipe for face and pose recognition, Google Gemini for speech analysis
-- **Speech Recognition**: Web Speech API for real-time transcription
+- **Frontend**: React, Tailwind CSS
+- **Vision**: MediaPipe FaceMesh + Pose (runs fully in-browser, no server round-trips)
+- **Speech**: Web Speech API + server-side text comparison fallback
+- **Backend**: Node.js / Express
+- **Deployment**: Vercel
 
 ## Disclaimer
 
-This tool is for educational and screening purposes only and should not be used for medical diagnosis. If you suspect a stroke, call emergency services immediately (911 in the US). Remember the FAST method: Facial drooping, Arm weakness, Speech difficulties, Time to call emergency services.
+This tool is for educational and screening purposes only and is not a substitute for medical diagnosis. If you suspect a stroke, call emergency services immediately. Always follow the F.A.S.T. method: **F**acial drooping, **A**rm weakness, **S**peech difficulty, **T**ime to call emergency services.
