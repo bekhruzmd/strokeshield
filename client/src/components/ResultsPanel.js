@@ -1,192 +1,240 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Chart from 'chart.js/auto';
 
-const ResultsPanel = ({ asymmetryMetrics, postureMetrics, riskLevel, assessmentFindings }) => {
+const ResultsPanel = ({ asymmetryMetrics, postureMetrics, speechMetrics, riskLevel, assessmentFindings, onSaveAssessment }) => {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
-  
-  // Format a metric value to 2 decimal places and add a % sign
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
   const formatMetric = (value) => {
-    if (value === undefined || value === null) return 'N/A';
-    return `${(value * 100).toFixed(2)}%`;
+    if (value === undefined || value === null) return '0.0%';
+    return `${(value * 100).toFixed(1)}%`;
   };
-  
-  // Get color based on risk level
-  const getRiskColor = (level) => {
+
+  const getRiskBadge = (level) => {
     switch (level) {
-      case 'high': return 'bg-red-500';
-      case 'medium': return 'bg-yellow-500';
-      case 'low': return 'bg-green-500';
-      default: return 'bg-gray-500';
+      case 'high':
+        return (
+          <div className="p-5 rounded-[12px] bg-[#272735] border border-[#5266eb]/50 text-[#ededf3]">
+            <div className="flex items-center gap-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#5266eb]" />
+              <div>
+                <div className="font-medium text-base text-[#ededf3]">High Stroke Risk Detected</div>
+                <div className="text-xs text-[#c3c3cc] mt-0.5">Multiple FAST neurological indicators flagged. Immediate emergency evaluation advised.</div>
+              </div>
+            </div>
+          </div>
+        );
+      case 'medium':
+        return (
+          <div className="p-5 rounded-[12px] bg-[#272735] text-[#ededf3]">
+            <div className="flex items-center gap-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#c3c3cc]" />
+              <div>
+                <div className="font-medium text-base text-[#ededf3]">Moderate Deviation Detected</div>
+                <div className="text-xs text-[#c3c3cc] mt-0.5">Slight facial asymmetry or posture imbalance observed.</div>
+              </div>
+            </div>
+          </div>
+        );
+      default:
+        return (
+          <div className="p-5 rounded-[12px] bg-[#272735] text-[#ededf3]">
+            <div className="flex items-center gap-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#ededf3]" />
+              <div>
+                <div className="font-medium text-base text-[#ededf3]">Low / Normal Risk</div>
+                <div className="text-xs text-[#c3c3cc] mt-0.5">Landmarks indicate balanced symmetry across facial & posture metrics.</div>
+              </div>
+            </div>
+          </div>
+        );
     }
   };
-  
-  // Create or update chart when metrics change
+
+  // Render Mercury Chart.js
   useEffect(() => {
     if (!chartRef.current) return;
-    
+
     if (chartInstance.current) {
       chartInstance.current.destroy();
     }
-    
-    // Prepare data for chart
+
     const asymmetryValues = [
-      asymmetryMetrics.eyeAsymmetry || 0,
-      asymmetryMetrics.mouthAsymmetry || 0,
-      asymmetryMetrics.eyebrowAsymmetry || 0,
-      asymmetryMetrics.overallAsymmetry || 0
+      (asymmetryMetrics.eyeAsymmetry || 0) * 100,
+      (asymmetryMetrics.mouthAsymmetry || 0) * 100,
+      (asymmetryMetrics.eyebrowAsymmetry || 0) * 100,
+      (asymmetryMetrics.overallAsymmetry || 0) * 100
     ];
-    
+
     const postureValues = [
-      postureMetrics.shoulderImbalance || 0,
-      postureMetrics.headTilt || 0,
-      postureMetrics.bodyLean || 0
+      (postureMetrics.shoulderImbalance || 0) * 100,
+      (postureMetrics.headTilt || 0) * 100,
+      (postureMetrics.bodyLean || 0) * 100,
+      (postureMetrics.armDriftRatio || 0) * 100
     ];
-    
-    // Create chart
+
     const ctx = chartRef.current.getContext('2d');
     chartInstance.current = new Chart(ctx, {
       type: 'bar',
       data: {
         labels: [
-          'Eye Asymmetry', 
-          'Mouth Asymmetry', 
-          'Eyebrow Asymmetry', 
-          'Overall Facial Asymmetry',
-          'Shoulder Imbalance',
+          'Eye Asym.',
+          'Mouth Droop',
+          'Eyebrow',
+          'Overall Face',
+          'Shoulder',
           'Head Tilt',
-          'Body Lean'
+          'Body Lean',
+          'Arm Drift'
         ],
         datasets: [{
-          label: 'Asymmetry Metrics (%)',
-          data: [...asymmetryValues.map(v => v * 100), ...postureValues.map(v => v * 100)],
+          label: 'Deviation (%)',
+          data: [...asymmetryValues, ...postureValues],
           backgroundColor: [
-            'rgba(255, 99, 132, 0.6)',
-            'rgba(54, 162, 235, 0.6)',
-            'rgba(255, 206, 86, 0.6)',
-            'rgba(75, 192, 192, 0.6)',
-            'rgba(153, 102, 255, 0.6)',
-            'rgba(255, 159, 64, 0.6)',
-            'rgba(199, 199, 199, 0.6)'
+            '#ededf3',
+            '#5266eb',
+            '#c3c3cc',
+            '#5266eb',
+            '#ededf3',
+            '#c3c3cc',
+            '#70707d',
+            '#5266eb'
           ],
-          borderColor: [
-            'rgba(255, 99, 132, 1)',
-            'rgba(54, 162, 235, 1)',
-            'rgba(255, 206, 86, 1)',
-            'rgba(75, 192, 192, 1)',
-            'rgba(153, 102, 255, 1)',
-            'rgba(255, 159, 64, 1)',
-            'rgba(199, 199, 199, 1)'
-          ],
-          borderWidth: 1
+          borderWidth: 0,
+          borderRadius: 6
         }]
       },
       options: {
+        responsive: true,
+        maintainAspectRatio: false,
         scales: {
           y: {
             beginAtZero: true,
             max: 100,
-            title: {
-              display: true,
-              text: 'Asymmetry (%)'
-            }
+            ticks: { color: '#c3c3cc', font: { family: 'Inter', size: 10 } },
+            grid: { color: 'rgba(112, 112, 125, 0.2)' }
+          },
+          x: {
+            ticks: { color: '#c3c3cc', font: { family: 'Inter', size: 10 } },
+            grid: { display: false }
           }
         },
         plugins: {
+          legend: { display: false },
           tooltip: {
             callbacks: {
-              label: function(context) {
-                return `${context.dataset.label}: ${context.raw.toFixed(2)}%`;
-              }
+              label: (context) => `Deviation: ${context.raw.toFixed(1)}%`
             }
           }
         }
       }
     });
-    
+
     return () => {
       if (chartInstance.current) {
         chartInstance.current.destroy();
       }
     };
   }, [asymmetryMetrics, postureMetrics]);
-  
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveSuccess(false);
+    try {
+      if (onSaveAssessment) {
+        await onSaveAssessment();
+      } else {
+        await fetch('/api/assessments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            asymmetryMetrics,
+            postureMetrics,
+            riskLevel,
+            timestamp: new Date().toISOString()
+          })
+        });
+      }
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch(e) {
+      console.error("Save failed:", e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
-    <div className="results-container">
-      <h2 className="text-xl font-bold mb-4">Detection Results</h2>
-      
-      {/* Risk Level Indicator */}
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold mb-2">Risk Assessment</h3>
-        <div className={`px-4 py-2 rounded text-white font-bold text-center ${getRiskColor(riskLevel)}`}>
-          {riskLevel === 'high' && 'High Risk - Seek Medical Attention'}
-          {riskLevel === 'medium' && 'Medium Risk - Consider Medical Consultation'}
-          {riskLevel === 'low' && 'Low Risk - Continue Monitoring'}
-          {!riskLevel && 'Awaiting Analysis'}
+    <div className="mercury-card space-y-6">
+      {/* Risk Level Header */}
+      {getRiskBadge(riskLevel)}
+
+      {/* Action Bar */}
+      <div className="flex items-center justify-between pt-2">
+        <h3 className="text-xs font-medium text-[#c3c3cc] uppercase tracking-wider">
+          Diagnostic Metrics
+        </h3>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="mercury-btn-obsidian !text-xs"
+        >
+          {saveSuccess ? 'Saved to Server' : saving ? 'Saving...' : 'Save Record'}
+        </button>
+      </div>
+
+      {/* Chart.js Visualization */}
+      <div className="bg-[#272735] rounded-[12px] p-4">
+        <h4 className="text-[11px] uppercase tracking-wider text-[#c3c3cc] mb-3">
+          Asymmetry Profile (%)
+        </h4>
+        <div className="w-full h-48">
+          <canvas ref={chartRef}></canvas>
         </div>
       </div>
-      
-      {/* Visualization */}
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold mb-2">Asymmetry Metrics</h3>
-        <div className="bg-white rounded-lg p-2 shadow-inner">
-          <canvas ref={chartRef} height="200"></canvas>
-        </div>
-      </div>
-      
+
       {/* Metrics Grid */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-2 gap-3">
         <div className="metric-card">
           <div className="metric-label">Eye Asymmetry</div>
           <div className="metric-value">{formatMetric(asymmetryMetrics.eyeAsymmetry)}</div>
         </div>
         <div className="metric-card">
-          <div className="metric-label">Mouth Asymmetry</div>
-          <div className="metric-value">{formatMetric(asymmetryMetrics.mouthAsymmetry)}</div>
+          <div className="metric-label">Mouth Droop</div>
+          <div className="metric-value text-[#5266eb]">{formatMetric(asymmetryMetrics.mouthAsymmetry)}</div>
         </div>
         <div className="metric-card">
           <div className="metric-label">Eyebrow Asymmetry</div>
           <div className="metric-value">{formatMetric(asymmetryMetrics.eyebrowAsymmetry)}</div>
         </div>
         <div className="metric-card">
-          <div className="metric-label">Overall Asymmetry</div>
-          <div className="metric-value">{formatMetric(asymmetryMetrics.overallAsymmetry)}</div>
+          <div className="metric-label">Arm Drift Ratio</div>
+          <div className="metric-value text-[#5266eb]">{formatMetric(postureMetrics.armDriftRatio)}</div>
         </div>
       </div>
-      
-      {/* Posture Metrics */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="metric-card">
-          <div className="metric-label">Shoulder Imbalance</div>
-          <div className="metric-value">{formatMetric(postureMetrics.shoulderImbalance)}</div>
-        </div>
-        <div className="metric-card">
-          <div className="metric-label">Head Tilt</div>
-          <div className="metric-value">{formatMetric(postureMetrics.headTilt)}</div>
-        </div>
-        <div className="metric-card">
-          <div className="metric-label">Body Lean</div>
-          <div className="metric-value">{formatMetric(postureMetrics.bodyLean)}</div>
-        </div>
-      </div>
-      
-      {/* Findings */}
-      {assessmentFindings.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Key Findings</h3>
-          <ul className="list-disc pl-5">
+
+      {/* Clinical Findings */}
+      {assessmentFindings && assessmentFindings.length > 0 && (
+        <div className="bg-[#272735] rounded-[12px] p-5">
+          <h4 className="text-xs uppercase tracking-wider font-medium text-[#c3c3cc] mb-3">
+            Diagnostic Observations
+          </h4>
+          <ul className="space-y-2 text-xs text-[#ededf3]">
             {assessmentFindings.map((finding, index) => (
-              <li key={index} className="mb-1">{finding}</li>
+              <li key={index} className="flex items-start gap-2">
+                <span className="text-[#5266eb] font-bold">•</span>
+                <span>{finding}</span>
+              </li>
             ))}
           </ul>
         </div>
       )}
-      
-      {/* Disclaimer */}
-      <div className="mt-6 text-sm text-gray-600 bg-gray-100 p-3 rounded">
-        <strong>Disclaimer:</strong> This tool is not a medical device and should not be used for medical diagnosis. 
-        If you suspect a stroke, call emergency services immediately (911 in the US). 
-        Remember the FAST method: Facial drooping, Arm weakness, Speech difficulties, Time to call emergency services.
+
+      {/* Disclaimer Footnote */}
+      <div className="text-[11px] text-[#c3c3cc] leading-relaxed pt-2 border-t border-[#272735]">
+        <strong className="text-[#ededf3]">Disclaimer:</strong> Tool intended for early F.A.S.T. stroke triage awareness. Always contact emergency services for diagnostic evaluation.
       </div>
     </div>
   );

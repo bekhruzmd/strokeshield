@@ -2,42 +2,133 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  @apply bg-gray-100 font-sans;
+:root {
+  --color-onyx-canvas: #171721;
+  --color-graphite-card: #1e1e2a;
+  --color-obsidian-button: #272735;
+  --color-slate-border: #70707d;
+  --color-mist-border: #e2e3ed;
+  --color-ash-text: #c3c3cc;
+  --color-ivory-text: #ededf3;
+  --color-cobalt: #5266eb;
+  --color-pure-white: #ffffff;
+
+  --font-arcadia: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-arcadiadisplay: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  --radius-card: 12px;
+  --radius-pill: 32px;
+  --radius-pill-lg: 40px;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-onyx-canvas);
+    color: var(--color-ivory-text);
+    font-family: var(--font-arcadia);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Mercury Graphite Card: Background #1e1e2a, 12px radius, 32px padding, flat borderless lift */
+.mercury-card {
+  background-color: var(--color-graphite-card);
+  border-radius: var(--radius-card);
+  padding: 32px;
+  border: none;
+  box-shadow: none;
+}
+
+/* Mercury Primary Cobalt CTA Pill Button */
+.mercury-btn-cobalt {
+  background-color: var(--color-cobalt);
+  color: var(--color-pure-white);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-arcadia);
+  font-weight: 400;
+  font-size: 16px;
+  padding: 12px 24px;
+  border: none;
+  box-shadow: none;
+  transition: opacity 0.2s ease, transform 0.1s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.mercury-btn-cobalt:hover {
+  opacity: 0.92;
+}
+
+/* Mercury Obsidian Secondary Pill Button */
+.mercury-btn-obsidian {
+  background-color: var(--color-obsidian-button);
+  color: var(--color-ivory-text);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-arcadia);
+  font-weight: 400;
+  font-size: 14px;
+  padding: 10px 20px;
+  border: none;
+  transition: background-color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.mercury-btn-obsidian:hover {
+  background-color: #313143;
+}
+
+/* Mercury Ghost Outline Pill Button */
+.mercury-btn-ghost {
+  background-color: transparent;
+  border: 1px solid var(--color-ivory-text);
+  color: var(--color-ivory-text);
+  border-radius: var(--radius-pill-lg);
+  font-family: var(--font-arcadia);
+  font-weight: 400;
+  font-size: 14px;
+  padding: 10px 20px;
+  transition: background-color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.mercury-btn-ghost:hover {
+  background-color: rgba(237, 237, 243, 0.08);
 }
 
 .detection-container {
-  @apply relative;
+  @apply relative rounded-[12px] overflow-hidden bg-[#171721];
+  aspect-ratio: 16 / 9;
 }
 
 .detection-canvas {
-  @apply absolute top-0 left-0 w-full h-full;
-}
-
-.warning-high {
-  @apply bg-red-500 text-white font-bold py-2 px-4 rounded;
-}
-
-.warning-medium {
-  @apply bg-yellow-500 text-white font-bold py-2 px-4 rounded;
-}
-
-.warning-low {
-  @apply bg-green-500 text-white font-bold py-2 px-4 rounded;
-}
-
-.results-container {
-  @apply bg-white rounded-lg shadow-lg p-4 m-4;
+  @apply absolute top-0 left-0 w-full h-full pointer-events-none;
 }
 
 .metric-card {
-  @apply bg-white rounded-lg shadow p-4 mb-4;
+  background-color: var(--color-graphite-card);
+  border-radius: var(--radius-card);
+  padding: 20px;
 }
 
 .metric-value {
-  @apply text-2xl font-bold;
+  color: var(--color-ivory-text);
+  font-size: 24px;
+  font-weight: 480;
+  letter-spacing: -0.01em;
 }
 
 .metric-label {
-  @apply text-gray-500 text-sm;
+  color: var(--color-ash-text);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
 }
+
+

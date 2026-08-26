@@ -7,7 +7,7 @@ const { createMemoryDb } = require('./memoryDb');
 
 // Initialize the app
 const app = express();
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 5000;
 
 // Initialize Google Generative AI
 const GOOGLE_AI_API_KEY = process.env.GOOGLE_AI_API_KEY;
@@ -77,7 +77,7 @@ app.get('/api/assessments/recent', (req, res) => {
   }
 });
 
-// Analyze speech using Google AI
+// Analyze speech using Google AI or local fallback algorithm
 app.post('/api/analyze-speech', async (req, res) => {
   try {
     const { transcript, readingPassage } = req.body;
@@ -86,118 +86,83 @@ app.post('/api/analyze-speech', async (req, res) => {
       return res.status(400).json({ error: 'Missing speech transcript' });
     }
     
-    // Configure the generative model - use the latest available model
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-    
-    // Create a prompt based on whether we have a reading passage or not
-    let promptText;
-    
-    if (readingPassage) {
-      // If we have both the transcript and the reading passage, we can do a comparison
-      promptText = `
-      Analyze the following speech transcript for potential stroke symptoms. The person was asked to read a specific passage, so compare their speech with the expected text:
-      
-      Expected reading passage: "${readingPassage}"
-      
-      Actual transcript: "${transcript}"
-      
-      Focus on:
-      1. Speech coherence and clarity
-      2. Word-finding difficulties (missing, substituted, or incorrect words)
-      3. Slurred speech patterns
-      4. Pronunciation errors that could indicate stroke
-      5. Sentence completion and flow
-      6. Omissions or additions compared to the expected reading passage
-      
-      Provide an analysis with:
-      - A coherence score (0-100) - how well their speech matches the expected passage
-      - A slurred speech score (0-100) - indication of slurring or unclear pronunciation
-      - Word finding difficulty score (0-100) - measure of word substitutions or omissions
-      - Overall stroke risk based on speech (low, medium, high)
-      - Key observations including specific words or phrases that show potential issues
-      `;
-    } else {
-      // Fall back to general speech analysis if no reading passage is provided
-      promptText = `
-      Analyze the following speech transcript for potential stroke symptoms:
-      "${transcript}"
-      
-      Focus on:
-      1. Speech coherence and clarity
-      2. Word-finding difficulties
-      3. Slurred speech patterns
-      4. Grammatical errors beyond normal speech
-      5. Repetition or confusion
-      
-      Provide an analysis with:
-      - A coherence score (0-100)
-      - A slurred speech score (0-100)
-      - Word finding difficulty score (0-100)
-      - Overall stroke risk based on speech (low, medium, high)
-      - Key observations
-      `;
-    }
-    
-    // Add the response format instructions
-    const prompt = `${promptText}
-    
-    Format the response as a JSON object with these exact fields: 
-    {
-      "coherenceScore": number,
-      "slurredSpeechScore": number,
-      "wordFindingScore": number, 
-      "overallRisk": "low"|"medium"|"high",
-      "observations": string[]
-    }
-    
-    Return only the JSON, no additional text.
-    `;
-    
-    // Generate content
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    
-    try {
-      // Extract the JSON from the response text (could be wrapped in ```json or code blocks)
-      let jsonStr = text.trim();
-      
-      // Remove code block formatting if present
-      if (jsonStr.startsWith('```')) {
-        jsonStr = jsonStr.replace(/```json\n|```\n|```/g, '');
+    let analysisData;
+
+    if (GOOGLE_AI_API_KEY && GOOGLE_AI_API_KEY !== 'YOUR_API_KEY') {
+      try {
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+        let promptText;
+        if (readingPassage) {
+          promptText = `
+          Analyze the following speech transcript for potential stroke symptoms by comparing with expected text:
+          Expected: "${readingPassage}"
+          Actual: "${transcript}"
+          Return JSON format with: { "coherenceScore": number, "slurredSpeechScore": number, "wordFindingScore": number, "overallRisk": "low"|"medium"|"high", "observations": string[] }
+          `;
+        } else {
+          promptText = `
+          Analyze the transcript for stroke speech symptoms: "${transcript}"
+          Return JSON format with: { "coherenceScore": number, "slurredSpeechScore": number, "wordFindingScore": number, "overallRisk": "low"|"medium"|"high", "observations": string[] }
+          `;
+        }
+        
+        const result = await model.generateContent(promptText);
+        const responseText = (await result.response).text().trim();
+        let jsonStr = responseText.replace(/```json\n|```\n|```/g, '');
+        analysisData = JSON.parse(jsonStr);
+      } catch (aiErr) {
+        console.warn("AI API call failed, using local speech comparator fallback:", aiErr.message);
       }
-      
-      // Parse JSON
-      const analysisData = JSON.parse(jsonStr);
-      
-      // Save the analysis to the database
-      const id = Date.now().toString();
-      const speechAnalysis = {
-        id,
-        transcript,
-        readingPassage, // Store the reading passage if available
-        ...analysisData,
-        timestamp: new Date().toISOString()
-      };
-      
-      // Add to database
-      db.addSpeechAnalysis(speechAnalysis);
-      
-      res.json(analysisData);
-      
-    } catch (jsonError) {
-      console.error('Error parsing AI response:', jsonError);
-      res.status(500).json({ 
-        error: 'Failed to parse speech analysis',
-        rawResponse: text
-      });
     }
+
+    // Fallback comparison if AI key unavailable or failed
+    if (!analysisData) {
+      const cleanExpected = (readingPassage || "").toLowerCase().replace(/[^a-z0-9 ]/g, '').split(' ').filter(Boolean);
+      const cleanActual = transcript.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(' ').filter(Boolean);
+
+      let matched = 0;
+      cleanActual.forEach(w => {
+        if (cleanExpected.includes(w)) matched++;
+      });
+
+      const totalExpected = cleanExpected.length || 1;
+      const matchRatio = Math.min(1, matched / totalExpected);
+      const coherenceScore = Math.round(matchRatio * 100);
+      const slurredSpeechScore = Math.round((1 - matchRatio) * 35);
+      const wordFindingScore = Math.round((1 - matchRatio) * 50);
+      const overallRisk = coherenceScore >= 75 ? 'low' : coherenceScore >= 50 ? 'medium' : 'high';
+
+      analysisData = {
+        coherenceScore,
+        slurredSpeechScore,
+        wordFindingScore,
+        overallRisk,
+        observations: [
+          `Speech word alignment score: ${coherenceScore}%`,
+          coherenceScore < 60 ? "Potential word omissions or hesitations observed." : "Speech alignment is clear.",
+          "Analysis computed via algorithmic text comparison."
+        ]
+      };
+    }
+
+    const id = Date.now().toString();
+    const speechAnalysis = {
+      id,
+      transcript,
+      readingPassage,
+      ...analysisData,
+      timestamp: new Date().toISOString()
+    };
     
+    db.addSpeechAnalysis(speechAnalysis);
+    res.json(analysisData);
+
   } catch (error) {
     console.error('Error analyzing speech:', error);
     res.status(500).json({ error: 'Failed to analyze speech' });
   }
 });
+
 
 // Transcribe audio with AssemblyAI
 app.post('/api/transcribe', async (req, res) => {

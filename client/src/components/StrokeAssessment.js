@@ -1,118 +1,96 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 
-const StrokeAssessment = ({ asymmetryMetrics, postureMetrics, onRiskUpdate, onFindingsUpdate }) => {
+const StrokeAssessment = ({ asymmetryMetrics, postureMetrics, speechMetrics, onRiskUpdate, onFindingsUpdate }) => {
   useEffect(() => {
-    // Skip assessment if metrics aren't available
-    if (Object.keys(asymmetryMetrics).length === 0 || Object.keys(postureMetrics).length === 0) {
+    // If metrics aren't loaded yet
+    if (!asymmetryMetrics || Object.keys(asymmetryMetrics).length === 0) {
       return;
     }
-    
-    // Extract metrics
-    const { eyeAsymmetry, mouthAsymmetry, eyebrowAsymmetry, overallAsymmetry } = asymmetryMetrics;
-    const { shoulderImbalance, headTilt, bodyLean } = postureMetrics;
-    
-    // Initialize findings array
+
+    const { eyeAsymmetry = 0, mouthAsymmetry = 0, overallAsymmetry = 0 } = asymmetryMetrics;
+    const { shoulderImbalance = 0, headTilt = 0, armDriftRatio = 0 } = postureMetrics || {};
+
     const findings = [];
-    
-    // Define thresholds
-    const LOW_THRESHOLD = 0.1; // 10%
-    const MEDIUM_THRESHOLD = 0.2; // 20%
-    const HIGH_THRESHOLD = 0.3; // 30%
-    
-    // Calculate risk score (weighted average of metrics)
     let riskScore = 0;
     let highRiskIndicators = 0;
-    
-    // Assess facial asymmetry (higher weight)
-    if (eyeAsymmetry > HIGH_THRESHOLD) {
-      findings.push("Significant eye asymmetry detected - possible facial drooping");
-      riskScore += 3;
-      highRiskIndicators++;
-    } else if (eyeAsymmetry > MEDIUM_THRESHOLD) {
-      findings.push("Moderate eye asymmetry detected");
-      riskScore += 2;
-    } else if (eyeAsymmetry > LOW_THRESHOLD) {
-      findings.push("Mild eye asymmetry detected");
-      riskScore += 1;
-    }
-    
+
+    const LOW_THRESHOLD = 0.12;
+    const MEDIUM_THRESHOLD = 0.22;
+    const HIGH_THRESHOLD = 0.32;
+
+    // 1. Face Assessment (F)
     if (mouthAsymmetry > HIGH_THRESHOLD) {
-      findings.push("Significant mouth asymmetry detected - possible facial drooping");
+      findings.push("Significant mouth drooping detected (F - Face Droop).");
       riskScore += 3;
       highRiskIndicators++;
     } else if (mouthAsymmetry > MEDIUM_THRESHOLD) {
-      findings.push("Moderate mouth asymmetry detected");
+      findings.push("Moderate mouth corner asymmetry observed.");
       riskScore += 2;
     } else if (mouthAsymmetry > LOW_THRESHOLD) {
-      findings.push("Mild mouth asymmetry detected");
+      findings.push("Mild mouth corner asymmetry.");
       riskScore += 1;
     }
-    
-    if (eyebrowAsymmetry > HIGH_THRESHOLD) {
-      findings.push("Significant eyebrow asymmetry detected");
+
+    if (eyeAsymmetry > HIGH_THRESHOLD) {
+      findings.push("Significant palpebral eye asymmetry detected.");
       riskScore += 2;
-    } else if (eyebrowAsymmetry > MEDIUM_THRESHOLD) {
-      findings.push("Moderate eyebrow asymmetry detected");
+      highRiskIndicators++;
+    } else if (eyeAsymmetry > MEDIUM_THRESHOLD) {
+      findings.push("Moderate eye asymmetry detected.");
       riskScore += 1;
     }
-    
+
     if (overallAsymmetry > HIGH_THRESHOLD) {
-      findings.push("High overall facial asymmetry detected");
+      findings.push("High overall facial asymmetry score.");
       riskScore += 3;
       highRiskIndicators++;
-    } else if (overallAsymmetry > MEDIUM_THRESHOLD) {
-      findings.push("Moderate overall facial asymmetry");
-      riskScore += 2;
     }
-    
-    // Assess posture (lower weight)
-    if (shoulderImbalance > HIGH_THRESHOLD) {
-      findings.push("Significant shoulder imbalance detected - possible weakness on one side");
-      riskScore += 2;
+
+    // 2. Arm Assessment (A)
+    if (armDriftRatio > HIGH_THRESHOLD || shoulderImbalance > HIGH_THRESHOLD) {
+      findings.push("Significant arm elevation imbalance / drift detected (A - Arm Weakness).");
+      riskScore += 3;
       highRiskIndicators++;
-    } else if (shoulderImbalance > MEDIUM_THRESHOLD) {
-      findings.push("Moderate shoulder imbalance detected");
-      riskScore += 1;
-    }
-    
-    if (headTilt > HIGH_THRESHOLD) {
-      findings.push("Significant head tilt detected");
+    } else if (armDriftRatio > MEDIUM_THRESHOLD || shoulderImbalance > MEDIUM_THRESHOLD) {
+      findings.push("Moderate shoulder height imbalance detected.");
       riskScore += 2;
-    } else if (headTilt > MEDIUM_THRESHOLD) {
-      findings.push("Moderate head tilt detected");
+    }
+
+    if (headTilt > MEDIUM_THRESHOLD) {
+      findings.push("Noticeable head tilt angle detected.");
       riskScore += 1;
     }
-    
-    if (bodyLean > HIGH_THRESHOLD) {
-      findings.push("Significant body leaning detected - possible balance issues");
-      riskScore += 2;
-    } else if (bodyLean > MEDIUM_THRESHOLD) {
-      findings.push("Moderate body leaning detected");
-      riskScore += 1;
+
+    // 3. Speech Assessment (S)
+    if (speechMetrics) {
+      if (speechMetrics.overallRisk === 'high' || (speechMetrics.coherenceScore < 60)) {
+        findings.push("Significant speech impairment or word-finding difficulty detected (S - Speech Difficulty).");
+        riskScore += 3;
+        highRiskIndicators++;
+      } else if (speechMetrics.overallRisk === 'medium') {
+        findings.push("Moderate speech articulation issues observed.");
+        riskScore += 1;
+      }
     }
-    
-    // Determine overall risk level
+
+    // Determine overall FAST risk level
     let riskLevel = 'low';
-    if (riskScore >= 6 || highRiskIndicators >= 2) {
+    if (riskScore >= 5 || highRiskIndicators >= 2) {
       riskLevel = 'high';
-      findings.push("Multiple high-risk indicators detected. Consider seeking immediate medical evaluation.");
-    } else if (riskScore >= 3) {
+      findings.push("⚠️ MULTIPLE HIGH-RISK F.A.S.T. INDICATORS FLAGGED. Seek immediate medical evaluation (Call 911).");
+    } else if (riskScore >= 2) {
       riskLevel = 'medium';
-      findings.push("Some concerning asymmetry detected. Consider consulting a healthcare provider.");
+      findings.push("Moderate neurological asymmetry detected. Consider consulting a physician.");
     } else {
-      findings.push("No significant asymmetry indicators detected at this time.");
+      findings.push("No critical F.A.S.T. stroke asymmetry indicators detected at this time.");
     }
-    
-    // Add stroke awareness information
-    findings.push("Remember FAST for stroke: Face drooping, Arm weakness, Speech difficulty, Time to call emergency services.");
-    
-    // Update risk level and findings
+
     onRiskUpdate(riskLevel);
     onFindingsUpdate(findings);
-    
-  }, [asymmetryMetrics, postureMetrics, onRiskUpdate, onFindingsUpdate]);
-  
-  return null; // This component doesn't render anything
+
+  }, [asymmetryMetrics, postureMetrics, speechMetrics, onRiskUpdate, onFindingsUpdate]);
+
+  return null;
 };
 
 export default StrokeAssessment;
